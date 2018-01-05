@@ -1,5 +1,6 @@
 package junit.org.rapidpm.vaadin.helloworld.server.junit4.base;
 
+import static java.lang.System.out;
 import static java.util.Optional.ofNullable;
 import static org.openqa.selenium.By.id;
 import static org.rapidpm.vaadin.helloworld.server.MyUI.BUTTON_ID;
@@ -24,6 +25,7 @@ import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import junit.org.rapidpm.vaadin.helloworld.server.junit4.rules.ScreenshotTestRule;
 
@@ -41,24 +43,21 @@ public class BaseSeleniumTest extends BaseTest {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    // init webDriver here
-    System.setProperty("newWebDriver.chrome.driver", "_data/chromedriver");
-    DesiredCapabilities chromeCapabilities = DesiredCapabilities.chrome();
-    driver = Optional.of(new ChromeDriver(chromeCapabilities));
+    out.println("BaseSeleniumTest.setUp !! ");
+    out.flush();
+    System.setProperty("webdriver.chrome.driver", "_data/chromedriver");
+    final ChromeOptions chromeOptions = new ChromeOptions();
+    chromeOptions.setHeadless(false);
+    driver = Optional.of(new ChromeDriver(chromeOptions));
     screenshotTestRule.setDriverOptional(driver);
-    driver.ifPresent(d -> {
-      d.manage().window().maximize();
-//      d.manage().window().setSize(new Dimension(1024, 768));
-    });
-    //final WebDriverWait wait = new WebDriverWait(driver, 10);
   }
 
 
   @Override
   @After
   public void tearDown() throws Exception {
-    System.out.println("BaseSeleniumTest.tearDown !! ");
-    // kill newWebDriver / Browser here
+    out.println("BaseSeleniumTest.tearDown !! ");
+    out.flush();
     driver.ifPresent(d -> {
       d.close();
       d.quit();
@@ -69,35 +68,18 @@ public class BaseSeleniumTest extends BaseTest {
 
 
   //generic version - need it later
-  public BiFunction<WebDriver, String, Optional<WebElement>> elementFor
+  private BiFunction<WebDriver, String, Optional<WebElement>> elementFor
       = (driver, id) -> ofNullable(driver.findElement(id(id)));
 
   //localized version
   private Function<String, WebElement> element
       = (id) -> driver
-      .flatMap(driverOptional -> elementFor.apply(driverOptional, id))
-      .orElseThrow(()-> new RuntimeException("WebElement with the ID " + id +" is not available"));
+      .flatMap(d -> elementFor.apply(d, id))
+      .orElseThrow(()-> new RuntimeException("WebElement with the ID "
+                                             + id +" is not available"));
 
   protected Supplier<WebElement> button = () -> element.apply(BUTTON_ID);
   protected Supplier<WebElement> output = () -> element.apply(OUTPUT_ID);
   protected Supplier<WebElement> inputA = () -> element.apply(INPUT_ID_A);
   protected Supplier<WebElement> inputB = () -> element.apply(INPUT_ID_B);
-
-  protected void takeScreenShot() {
-    System.out.println("takeScreenShot !!");
-    //take Screenshot
-    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    try {
-      outputStream.write(((TakesScreenshot) driver.get()).getScreenshotAs(OutputType.BYTES));
-      //write to target/screenshot-[timestamp].jpg
-      final FileOutputStream out = new FileOutputStream("target/screenshot-" + LocalDateTime.now() + ".png");
-      out.write(outputStream.toByteArray());
-      out.flush();
-      out.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
-
-
 }
